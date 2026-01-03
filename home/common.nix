@@ -75,6 +75,8 @@
 
       # Networking quick checks
       myip = "curl -fsSL ifconfig.me";
+      myip4 = "curl -4 -fsSL ifconfig.me";
+      myip6 = "curl -6 -fsSL ifconfig.me";
       digg = "dig +short";
     };
 
