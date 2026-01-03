@@ -226,6 +226,8 @@
     socat
     micromamba
     nodejs_20
+    nnn
+    tig
   ];
 
   home.file.".p10k.zsh".source = ../dotfiles/.p10k.zsh;
