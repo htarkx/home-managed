@@ -224,6 +224,7 @@
     wget
     httpie
     openssl
+    wireguard-tools
     netcat
     socat
     micromamba
