@@ -32,7 +32,7 @@
           inherit pkgs;
           modules = [
             nixvim.homeModules.nixvim
-            nix-index-database.hmModules.nix-index
+            nix-index-database.homeModules.nix-index
             ./home/common.nix
             osModule
             ({
