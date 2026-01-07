@@ -12,6 +12,11 @@
     mkdir -p "$HOME/.local/share/npm-global/bin"
   '';
 
+  home.activation.ensureMambaRootPrefix = lib.hm.dag.entryBefore [ "linkGeneration" ] ''
+    mkdir -p "$HOME/.mamba"
+    mkdir -p "$HOME/.config/mamba"
+  '';
+
   programs.tmux = {
     enable = true;
     terminal = "tmux-256color";
@@ -118,6 +123,7 @@
       bindkey -v
       [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
       if command -v micromamba >/dev/null 2>&1; then
+        export MAMBA_ROOT_PREFIX="$HOME/.mamba"
         eval "$(micromamba shell hook --shell zsh)"
       fi
 
@@ -179,6 +185,7 @@
     LC_CTYPE = "C.UTF-8";
     LC_COLLATE = "C.UTF-8";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm-global";
+    MAMBA_ROOT_PREFIX = "${config.home.homeDirectory}/.mamba";
   };
 
   home.sessionPath = [
@@ -187,6 +194,10 @@
 
   home.file.".npmrc".text = ''
     prefix=${config.home.homeDirectory}/.local/share/npm-global
+  '';
+
+  home.file.".config/mamba/mambarc".text = ''
+    root_prefix: ${config.home.homeDirectory}/.mamba
   '';
 
   programs.nixvim =
