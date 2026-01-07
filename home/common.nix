@@ -83,6 +83,12 @@
       myip4 = "curl -4 -fsSL ifconfig.me | sed 's/%.*$//'";
       myip6 = "curl -6 -fsSL ifconfig.me | sed 's/%.*$//'";
       digg = "dig +short";
+
+      # Micromamba (avoid aliasing `mamba` to prevent conflicts)
+      mm = "micromamba";
+      mma = "micromamba activate";
+      mmd = "micromamba deactivate";
+      mml = "micromamba env list";
     };
 
     oh-my-zsh = {
