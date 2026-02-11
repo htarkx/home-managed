@@ -7,6 +7,7 @@
   programs.zsh.initContent = lib.mkBefore ''
     # --- Fix for VS Code Remote & Nix Environment (interactive shells) ---
     [[ -r ~/.nix-profile/etc/profile.d/hm-session-vars.sh ]] && . ~/.nix-profile/etc/profile.d/hm-session-vars.sh
+    export BCC_KERNEL_SOURCE="/lib/modules/$(uname -r)/build"
     # --------------------------------------------------------------------
 
     ports() {
@@ -53,6 +54,22 @@
     nmon
     iotop
     ioping
+    bpftrace
+    bcc
+    bpftools
+    bpfmon
   ]);
+
+  home.sessionVariables = {
+    BCC_TOOLS_PATH = "${pkgs.bcc}/share/bcc/tools";
+  };
+
+  home.shellAliases = {
+    bcc-tools = "ls -1 ${pkgs.bcc}/share/bcc/tools";
+    runqlat = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/runqlat";
+    softirqs = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/softirqs";
+    oomkill = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/oomkill";
+    bcc-ksrc = "echo /lib/modules/$(uname -r)/build";
+  };
 
 }
