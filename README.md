@@ -118,6 +118,12 @@ nix flake show
 
 `tcpdump`, `wireshark`, `iperf3`, `mtr`, `nmap`, `dnsutils`, `curl`, `wget`, `httpie`, `openssl`
 
+**Performance benchmarking**
+
+Cross-platform: `iperf3` (network throughput)
+
+Linux-only: `sysstat` (`mpstat`), `sysbench` (CPU/memory), `fio` (disk I/O)
+
 **Security / traffic replay tools**
 
 `netcat`, `socat`, `mitmproxy`
@@ -128,7 +134,17 @@ nix flake show
 
 **OS-specific add-ons**
 
-macOS gains `gnuplot`; Linux gains `iproute2`, `ethtool`, `bridge-utils`.
+macOS gains `gnuplot`; Linux gains `iproute2`, `ethtool`, `bridge-utils`, `sysstat`, `sysbench`, `fio`.
+
+### Linux benchmark shortcuts
+
+Linux profile provides these aliases:
+
+- `bench-steal` -> `mpstat -P ALL 1 30`
+- `bench-cpu` -> `sysbench cpu --threads=$(nproc) --time=60 run`
+- `bench-mem` -> `sysbench memory --memory-total-size=20G run`
+- `bench-disk` -> `fio --name=randrw --filename=/tmp/fio.test --size=4G --bs=4k --rw=randrw --iodepth=32 --numjobs=4 --runtime=60 --time_based --group_reporting`
+- `bench-net-server` -> `iperf3 -s`
 
 ## Zsh Configuration (English, exhaustive)
 

@@ -48,6 +48,8 @@
     iproute2
     ethtool
     bridge-utils
+    sysbench
+    fio
     dool
     sysstat
     atop
@@ -65,6 +67,11 @@
   };
 
   home.shellAliases = {
+    bench-cpu = "sysbench cpu --threads=$(nproc) --time=60 run";
+    bench-mem = "sysbench memory --memory-total-size=20G run";
+    bench-disk = "fio --name=randrw --filename=/tmp/fio.test --size=4G --bs=4k --rw=randrw --iodepth=32 --numjobs=4 --runtime=60 --time_based --group_reporting";
+    bench-steal = "mpstat -P ALL 1 30";
+    bench-net-server = "iperf3 -s";
     bcc-tools = "ls -1 ${pkgs.bcc}/share/bcc/tools";
     runqlat = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/runqlat";
     softirqs = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/softirqs";
