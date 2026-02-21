@@ -2,6 +2,75 @@
 
 Home Manager configuration optimized for a "computer networking student" toolkit with cross-platform defaults.
 
+## Fresh Machine Setup (macOS/Linux)
+
+Assume a new machine with no Nix installed.
+
+1. Install Nix (official installer)
+
+```bash
+sh <(curl -L https://nixos.org/nix/install) --daemon
+```
+
+2. Restart your shell/session, then enable flakes
+
+```bash
+mkdir -p ~/.config/nix
+cat > ~/.config/nix/nix.conf << 'EOF'
+experimental-features = nix-command flakes
+EOF
+```
+
+3. Apply this repo (bootstrap with `nix run`, no pre-installed `home-manager` needed)
+
+```bash
+cd /home/htark/codes/home-managed
+nix run github:nix-community/home-manager -- switch -b backup-$(date +%s) --flake .#current --impure
+```
+
+4. Configure Git identity (required for commits)
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+```
+
+Verify:
+
+```bash
+git config --global --list | rg "user.name|user.email"
+```
+
+Notes:
+
+- Works for both macOS and Linux.
+- `--impure` is required for this flake because `homeConfigurations.current` reads `USER`/`HOME` from environment variables.
+- Using `nix run` for first activation avoids `home-manager` binary conflicts in `nix profile`.
+
+### Linux + VS Code Terminal (important on fresh machines)
+
+On Linux fresh machines, VS Code integrated terminal may still open `bash` by default even after Home Manager enables `zsh`.
+This is because VS Code has its own terminal profile settings and does not always follow your login shell.
+
+Option A (recommended): manage VS Code terminal profile manually
+
+```json
+// ~/.vscode-server/data/Machine/settings.json (Remote SSH)
+// or ~/.config/Code/User/settings.json (local Linux desktop)
+{
+  "terminal.integrated.defaultProfile.linux": "zsh",
+  "terminal.integrated.profiles.linux": {
+    "zsh": {
+      "path": "/home/<user>/.nix-profile/bin/zsh",
+      "args": ["-l"]
+    }
+  }
+}
+```
+
+Option B: manage this file with Home Manager as `xdg.configFile`/`home.file`.
+This is possible, but many users prefer keeping editor-specific settings outside this repo to avoid overriding personal IDE preferences across machines.
+
 ## Usage
 
 Current machine (auto-detect USER/HOME, requires impure):
@@ -10,7 +79,7 @@ Current machine (auto-detect USER/HOME, requires impure):
 home-manager switch --flake .#current --impure
 ```
 
-> Ensure the `home-manager` CLI is installed (e.g., `nix profile install github:nix-community/home-manager` or via your preferred channel) so the command above is available.
+> If `home-manager` is not in PATH, use `nix run github:nix-community/home-manager -- switch --flake .#current --impure` instead.
 
 Fixed profiles (optional):
 
