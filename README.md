@@ -24,7 +24,7 @@ EOF
 3. Apply this repo (bootstrap with `nix run`, no pre-installed `home-manager` needed)
 
 ```bash
-cd /home/htark/codes/home-managed
+cd /home/<user>/codes/home-managed
 nix run github:nix-community/home-manager -- switch -b backup-$(date +%s) --flake .#current --impure
 ```
 
@@ -184,3 +184,32 @@ Enabled via `programs.zsh.plugins`:
 ### Where to edit
 
 All of the above lives in `home/common.nix`.
+
+## System Sysctl (Ubuntu / non-NixOS)
+
+This repo is primarily Home Manager, so system-level kernel/network sysctls are
+provided as templates instead of being applied automatically.
+
+Use `templates/sysctl/99-bbr.conf` for:
+
+- TCP BBR (`net.ipv4.tcp_congestion_control = bbr`)
+- `fq` qdisc
+- TCP/UDP buffer tuning baseline (useful for QUIC/Hysteria and bursty traffic)
+
+Install and apply:
+
+```bash
+sudo cp /home/<user>/codes/home-managed/templates/sysctl/99-bbr.conf /etc/sysctl.d/99-bbr.conf
+sudo sysctl --system
+```
+
+Verify:
+
+```bash
+sysctl net.core.default_qdisc
+sysctl net.ipv4.tcp_congestion_control
+sysctl net.core.rmem_max net.core.wmem_max
+sysctl net.ipv4.tcp_rmem net.ipv4.tcp_wmem
+sysctl net.ipv4.udp_rmem_min net.ipv4.udp_wmem_min
+sysctl net.core.netdev_max_backlog
+```
