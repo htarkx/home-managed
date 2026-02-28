@@ -72,8 +72,7 @@ in
   '';
 
   home.activation.installVscodeServerExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    ext_list="$HOME/.vscode-server/extensions/extensions.txt"
-    if [ ! -r "$ext_list" ] || [ ! -d "$HOME/.vscode-server/bin" ]; then
+    if [ ! -d "$HOME/.vscode-server/bin" ]; then
       exit 0
     fi
 
@@ -87,16 +86,12 @@ in
       [ -n "$ext" ] || continue
       echo "$installed" | grep -Fxiq "$ext" && continue
       "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1 || true
-    done < "$ext_list"
+    done <<< "${lib.concatStringsSep "\n" vscodeServerExtensions}"
   '';
 
   home.file.".vscode-server/data/Machine/settings.json" = {
     force = true;
     text = builtins.toJSON vscodeServerSettings;
-  };
-  home.file.".vscode-server/extensions/extensions.txt" = {
-    force = true;
-    text = lib.concatStringsSep "\n" vscodeServerExtensions + "\n";
   };
 
   home.packages = lib.mkAfter (
