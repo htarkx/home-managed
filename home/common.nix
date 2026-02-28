@@ -302,6 +302,7 @@
     wireguard-tools
     netcat
     socat
+    nixd
     micromamba
     nodejs_20
     yazi

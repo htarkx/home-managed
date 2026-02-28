@@ -70,7 +70,7 @@
       servers = {
         clangd.enable = true;
         gopls.enable = true;
-        nil_ls.enable = true;
+        nixd.enable = true;
       };
     };
   };
