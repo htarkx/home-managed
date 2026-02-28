@@ -1,4 +1,31 @@
 { pkgs, lib, ... }:
+let
+  vscodeServerSettings = {
+    "terminal.integrated.defaultProfile.linux" = "zsh";
+    "terminal.integrated.profiles.linux" = {
+      zsh = {
+        path = "/home/htark/.nix-profile/bin/zsh";
+        args = [ "-l" ];
+      };
+    };
+    "nix.enableLanguageServer" = true;
+    "nix.serverPath" = "nixd";
+  };
+
+  vscodeServerExtensions = [
+    "eamodio.gitlens"
+    "golang.go"
+    "gruntfuggly.todo-tree"
+    "jnoortheen.nix-ide"
+    "llvm-vs-code-extensions.vscode-clangd"
+    "mkhl.direnv"
+    "ms-vscode.cmake-tools"
+    "ms-vscode.cpp-devtools"
+    "openai.chatgpt"
+    "tamasfe.even-better-toml"
+    "vadimcn.vscode-lldb"
+  ];
+in
 {
   targets.genericLinux.enable = true;
 
@@ -63,26 +90,35 @@
     done < "$ext_list"
   '';
 
-  home.file.".vscode-server/data/Machine/settings.json".source = ../dotfiles/vscode/settings.json;
-  home.file.".vscode-server/extensions/extensions.txt".source = ../dotfiles/vscode/extensions.txt;
+  home.file.".vscode-server/data/Machine/settings.json" = {
+    force = true;
+    text = builtins.toJSON vscodeServerSettings;
+  };
+  home.file.".vscode-server/extensions/extensions.txt" = {
+    force = true;
+    text = lib.concatStringsSep "\n" vscodeServerExtensions + "\n";
+  };
 
-  home.packages = lib.mkAfter (with pkgs; [
-    iproute2
-    ethtool
-    bridge-utils
-    sysbench
-    fio
-    dool
-    sysstat
-    atop
-    nmon
-    iotop
-    ioping
-    bpftrace
-    bcc
-    bpftools
-    bpfmon
-  ]);
+  home.packages = lib.mkAfter (
+    with pkgs;
+    [
+      iproute2
+      ethtool
+      bridge-utils
+      sysbench
+      fio
+      dool
+      sysstat
+      atop
+      nmon
+      iotop
+      ioping
+      bpftrace
+      bcc
+      bpftools
+      bpfmon
+    ]
+  );
 
   home.sessionVariables = {
     BCC_TOOLS_PATH = "${pkgs.bcc}/share/bcc/tools";

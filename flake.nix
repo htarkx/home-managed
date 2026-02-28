@@ -97,7 +97,18 @@
           username = envUser;
           homeDirectory = envHome;
         };
-      };
+      } // builtins.listToAttrs (
+        if envUser != "" then [
+          {
+            name = envUser;
+            value = mkHome {
+              system = builtins.currentSystem;
+              username = envUser;
+              homeDirectory = envHome;
+            };
+          }
+        ] else [ ]
+      );
     }
     // flake-utils.lib.eachDefaultSystem (system:
       let

@@ -1,4 +1,9 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 {
   programs.home-manager.enable = true;
 
@@ -51,7 +56,6 @@
     mkdir -p "$HOME/.mamba"
     mkdir -p "$HOME/.config/mamba"
   '';
-
 
   programs.tmux = {
     enable = true;
@@ -173,27 +177,51 @@
 
       hms() {
         local root
+        local use_auto_backup=1
         root=$(git rev-parse --show-toplevel 2>/dev/null) || {
           echo "hms: not inside a git repository" >&2
           return 1
         }
+        for arg in "$@"; do
+          case "$arg" in
+            -b|--backup-ext)
+              use_auto_backup=0
+              ;;
+          esac
+        done
 
         (
           cd "$root" || exit
-          home-manager switch --flake .#current --impure "$@"
+          if (( use_auto_backup )); then
+            home-manager switch -b "backup-$(date +%Y%m%d-%H%M%S)" --flake .#current --impure "$@"
+          else
+            home-manager switch --flake .#current --impure "$@"
+          fi
         )
       }
 
       hms-fast() {
         local root
+        local use_auto_backup=1
         root=$(git rev-parse --show-toplevel 2>/dev/null) || {
           echo "hms-fast: not inside a git repository" >&2
           return 1
         }
+        for arg in "$@"; do
+          case "$arg" in
+            -b|--backup-ext)
+              use_auto_backup=0
+              ;;
+          esac
+        done
 
         (
           cd "$root" || exit
-          home-manager switch --flake .#current --impure --no-build-output "$@"
+          if (( use_auto_backup )); then
+            home-manager switch -b "backup-$(date +%Y%m%d-%H%M%S)" --flake .#current --impure --no-build-output "$@"
+          else
+            home-manager switch --flake .#current --impure --no-build-output "$@"
+          fi
         )
       }
     '';
@@ -258,9 +286,10 @@
     root_prefix: ${config.home.homeDirectory}/.mamba
   '';
 
-  programs.nixvim =
-    { enable = true; }
-    // (import ../nixvim.nix { inherit pkgs; });
+  programs.nixvim = {
+    enable = true;
+  }
+  // (import ../nixvim.nix { inherit pkgs; });
 
   home.packages = with pkgs; [
     coreutils
@@ -304,6 +333,7 @@
     netcat
     socat
     nixd
+    nixfmt-rfc-style
     micromamba
     nodejs_20
     yazi
