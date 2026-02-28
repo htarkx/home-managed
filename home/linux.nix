@@ -94,10 +94,12 @@ in
     done <<< "${lib.concatStringsSep "\n" vscodeServerExtensions}"
   '';
 
-  home.file.".vscode-server/data/Machine/settings.json" = {
-    force = true;
-    text = builtins.toJSON vscodeServerSettings;
-  };
+  home.activation.writeVscodeServerSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings_dir="$HOME/.vscode-server/data/Machine"
+    settings_file="$settings_dir/settings.json"
+    mkdir -p "$settings_dir"
+    printf '%s\n' ${lib.escapeShellArg (builtins.toJSON vscodeServerSettings)} > "$settings_file"
+  '';
 
   home.packages = lib.mkAfter (
     with pkgs;
