@@ -44,6 +44,28 @@
     # --------------------------------------------------------------
   '';
 
+  home.activation.installVscodeServerExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ext_list="$HOME/.vscode-server/extensions/extensions.txt"
+    if [ ! -r "$ext_list" ] || [ ! -d "$HOME/.vscode-server/bin" ]; then
+      exit 0
+    fi
+
+    code_server_bin="$(find "$HOME/.vscode-server/bin" -maxdepth 3 -type f -name code-server | head -n 1)"
+    if [ -z "$code_server_bin" ]; then
+      exit 0
+    fi
+
+    installed="$("$code_server_bin" --list-extensions 2>/dev/null || true)"
+    while IFS= read -r ext; do
+      [ -n "$ext" ] || continue
+      echo "$installed" | grep -Fxiq "$ext" && continue
+      "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1 || true
+    done < "$ext_list"
+  '';
+
+  home.file.".vscode-server/data/Machine/settings.json".source = ../dotfiles/vscode/settings.json;
+  home.file.".vscode-server/extensions/extensions.txt".source = ../dotfiles/vscode/extensions.txt;
+
   home.packages = lib.mkAfter (with pkgs; [
     iproute2
     ethtool

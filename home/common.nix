@@ -52,6 +52,7 @@
     mkdir -p "$HOME/.config/mamba"
   '';
 
+
   programs.tmux = {
     enable = true;
     terminal = "tmux-256color";

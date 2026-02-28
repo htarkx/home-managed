@@ -1,0 +1,11 @@
+eamodio.gitlens
+golang.go
+gruntfuggly.todo-tree
+jnoortheen.nix-ide
+llvm-vs-code-extensions.vscode-clangd
+mkhl.direnv
+ms-vscode.cmake-tools
+ms-vscode.cpp-devtools
+openai.chatgpt
+tamasfe.even-better-toml
+vadimcn.vscode-lldb
