@@ -34,14 +34,7 @@ in
 {
   targets.genericLinux.enable = true;
 
-  # VS Code integrated terminal often starts an interactive *non-login* zsh, which does not read ~/.zprofile.
-  # Ensure Home Manager session vars (and thus nix.sh) are loaded in that case.
   programs.zsh.initContent = lib.mkBefore ''
-    # --- Fix for VS Code Remote & Nix Environment (interactive shells) ---
-    [[ -r ~/.nix-profile/etc/profile.d/hm-session-vars.sh ]] && . ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-    export BCC_KERNEL_SOURCE="/lib/modules/$(uname -r)/build"
-    # --------------------------------------------------------------------
-
     ports() {
       if ! command -v ss >/dev/null 2>&1; then
         echo "ports: 'ss' not found (install iproute2)" >&2
@@ -59,38 +52,22 @@ in
     }
   '';
 
-  # Some environments (notably VS Code Remote) propagate __HM_SESS_VARS_SOURCED=1 but overwrite PATH/NIX_PROFILES.
-  # In that case hm-session-vars.sh becomes a no-op, so we force a re-source when NIX env is missing.
-  programs.zsh.envExtra = lib.mkAfter ''
-    if [[ -z "$NIX_PROFILES" || ":$PATH:" != *":$HOME/.nix-profile/bin:"* ]]; then
-      unset __HM_SESS_VARS_SOURCED
-      [[ -r "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]] && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-    fi
-  '';
-
-  # For login shells, keep ~/.zprofile sourcing /etc/profile and ~/.profile.
-  programs.zsh.profileExtra = ''
-    # --- Fix for VS Code Remote & Nix Environment (login shells) ---
-    [[ -r /etc/profile ]] && emulate sh -c '. /etc/profile'
-    [[ -r ~/.profile ]] && emulate sh -c '. ~/.profile'
-    # --------------------------------------------------------------
-  '';
-
   home.activation.installVscodeServerExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ ! -d "$HOME/.vscode-server/bin" ]; then
-      exit 0
-    fi
-
-    code_server_bin="$(find "$HOME/.vscode-server/bin" -maxdepth 3 -type f -name code-server | head -n 1)"
+    code_server_bin="$(ls -1dt "$HOME"/.vscode-server/cli/servers/Stable-*/server/bin/code-server 2>/dev/null | head -n 1)"
     if [ -z "$code_server_bin" ]; then
-      exit 0
+      code_server_bin="$(ls -1dt "$HOME"/.vscode-server/bin/*/bin/code-server 2>/dev/null | head -n 1)"
     fi
 
-    installed="$("$code_server_bin" --list-extensions 2>/dev/null || true)"
+    if [ -z "$code_server_bin" ]; then
+      echo "installVscodeServerExtensions: code-server not found under ~/.vscode-server" >&2
+      exit 1
+    fi
+
+    installed="$("$code_server_bin" --list-extensions 2>/dev/null)"
     while IFS= read -r ext; do
       [ -n "$ext" ] || continue
       echo "$installed" | grep -Fxiq "$ext" && continue
-      "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1 || true
+      "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1
     done <<< "${lib.concatStringsSep "\n" vscodeServerExtensions}"
   '';
 
