@@ -1,10 +1,15 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
   vscodeServerSettings = {
     "terminal.integrated.defaultProfile.linux" = "zsh";
     "terminal.integrated.profiles.linux" = {
       zsh = {
-        path = "/home/htark/.nix-profile/bin/zsh";
+        path = "${config.home.homeDirectory}/.nix-profile/bin/zsh";
         args = [ "-l" ];
       };
     };
