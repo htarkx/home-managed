@@ -14,11 +14,13 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       flake-utils,
       home-manager,
       nixvim,
       nix-index-database,
+      ...
     }:
     let
       twistedNoChecksOverlay =
