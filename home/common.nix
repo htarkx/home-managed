@@ -382,6 +382,7 @@
     wget
     httpie
     openssl
+    ansible
     wireguard-tools
     kubectl
     google-cloud-sdk
