@@ -359,6 +359,7 @@
     dust
     ncdu
     duf
+    gh
     git-open
     btop
     glances
