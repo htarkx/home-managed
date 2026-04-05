@@ -96,6 +96,8 @@ in
       bcc
       bpftools
       bpfmon
+      kubernetes-helm
+      k9s
     ]
   );
 
