@@ -49,13 +49,13 @@
     ls = "eza";
     ll = "eza -lah --group-directories-first";
     cat = "bat";
-    grep = "rg";
-    find = "fd";
+    # grep = "rg";  # Disabled: too common, use native command
+    # find = "fd";   # Disabled: too common, use native command
 
     # Observability
     top = "btop";
-    df = "duf";
-    du = "dust";
+    # df = "duf";    # Disabled: too common, use native command
+    # du = "dust";   # Disabled: too common, use native command
     f = "fastfetch";
 
     # Git workflow
