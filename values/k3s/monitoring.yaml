@@ -1,0 +1,29 @@
+prometheus:
+  prometheusSpec:
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
+
+grafana:
+  initChownData:
+    enabled: false
+  persistence:
+    enabled: true
+    storageClassName: local-path
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      memory: 256Mi
+  service:
+    type: LoadBalancer
+
+alertmanager:
+  enabled: true
+
+defaultRules:
+  create: true
+  rules:
+    cilium: true

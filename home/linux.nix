@@ -117,6 +117,15 @@ in
     softirqs = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/softirqs";
     oomkill = "sudo env \"PATH=$PATH\" BCC_KERNEL_SOURCE=\"/lib/modules/$(uname -r)/build\" ${pkgs.bcc}/share/bcc/tools/oomkill";
     bcc-ksrc = "echo /lib/modules/$(uname -r)/build";
+    k3s-install = "bash ${config.home.homeDirectory}/codes/home-managed/scripts/k3s/k3s-install.sh";
+    k3s-cilium = "bash ${config.home.homeDirectory}/codes/home-managed/scripts/k3s/cilium-deploy.sh";
+    k3s-monitoring = "bash ${config.home.homeDirectory}/codes/home-managed/scripts/k3s/monitoring-deploy.sh";
+    k3s-up = "bash ${config.home.homeDirectory}/codes/home-managed/scripts/k3s/enable-all.sh";
+    k3s-down = "bash ${config.home.homeDirectory}/codes/home-managed/scripts/k3s/disable-all.sh";
+    k3s-status = "kubectl get nodes && echo && kubectl get pods -A";
+    k3s-monitoring-status = "helm status monitoring -n monitoring && echo && kubectl get pods -n monitoring";
+    k3s-grafana-pass = "kubectl get secret -n monitoring monitoring-grafana -o jsonpath='{.data.admin-password}' | base64 -d; echo";
+    k3s-grafana = "kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80";
   };
 
 }

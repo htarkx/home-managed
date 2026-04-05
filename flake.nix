@@ -59,6 +59,7 @@
           system,
           username,
           homeDirectory,
+          enableK3s ? false,
         }:
         let
           lib = nixpkgs.lib;
@@ -81,11 +82,13 @@
             nixvim.homeModules.nixvim
             nix-index-database.homeModules.nix-index
             ./home/common.nix
+            ./home/k3s.nix
             osModule
             {
               home.username = username;
               home.homeDirectory = homeDirectory;
               home.stateVersion = "23.11";
+              k3s.enable = enableK3s;
             }
           ];
         };
@@ -99,6 +102,12 @@
           system = builtins.currentSystem;
           username = envUser;
           homeDirectory = envHome;
+        };
+        k3s = mkHome {
+          system = builtins.currentSystem;
+          username = envUser;
+          homeDirectory = envHome;
+          enableK3s = true;
         };
         user-linux = mkHome {
           system = "x86_64-linux";

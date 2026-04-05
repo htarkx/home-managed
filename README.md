@@ -93,8 +93,23 @@ nix flake show
 - `home/common.nix`: everything shared across macOS/Linux (shells, editor, base tooling).
 - `home/darwin.nix`: macOS-only extras (currently `gnuplot`).
 - `home/linux.nix`: Linux-only extras (`iproute2`, `ethtool`, `bridge-utils`), enables `targets.genericLinux`, and includes Zsh hooks for VS Code Remote terminals to pick up Nix/Home Manager env reliably.
+- `scripts/k3s/*.sh`: imperative k3s lifecycle helpers; use `enable-all.sh` to bring the stack up and `disable-all.sh` to tear it fully down.
 - `nixvim.nix`: drives both the Home Manager nixvim module and the standalone `packages.nvim`.
 - `dotfiles/.p10k.zsh`: powerlevel10k theme referenced from the Zsh init script.
+
+### k3s shortcuts
+
+Linux profile also exposes:
+
+- `k3s-install`
+- `k3s-cilium`
+- `k3s-monitoring`
+- `k3s-up`
+- `k3s-down`
+- `k3s-status`
+- `k3s-monitoring-status`
+- `k3s-grafana-pass`
+- `k3s-grafana`
 
 ## Customize
 
@@ -179,7 +194,7 @@ Enabled via `programs.zsh.plugins`:
 - `programs.direnv.enable = true`
 - `programs.direnv.nix-direnv.enable = true`
 - `programs.nixvim = import ../nixvim.nix { inherit pkgs; };`
-- Custom Zsh helpers `hms()` / `hms-fast()` wrap `home-manager switch --flake .#current --impure` (with optional `--no-build-output`) and auto-`cd` to the repo root via `git rev-parse`.
+- Custom Zsh helpers `hms()` / `hms-fast()` wrap `home-manager switch --flake .#current --impure` (with optional `--no-build-output`), auto-`cd` to the repo root via `git rev-parse`, and accept a flake target like `hms k3s`.
 
 ### Where to edit
 

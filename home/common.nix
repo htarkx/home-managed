@@ -45,6 +45,7 @@
   ));
 
   home.shellAliases = {
+    sudo = "sudo -E";
     # Base muscle memory
     ls = "eza";
     ll = "eza -lah --group-directories-first";
@@ -187,15 +188,37 @@
     initContent = ''
       hm_switch() {
         local fast_mode=0
+        local config="current"
         if [[ "$1" == "--fast" ]]; then
           fast_mode=1
           shift
         fi
+        local -a args=("$@")
+        local i=1
+
+        while (( i <= $# )); do
+          case "''${args[i]}" in
+            -b|--backup-ext)
+              (( i += 2 ))
+              ;;
+            --backup-ext=*)
+              (( i += 1 ))
+              ;;
+            *)
+              break
+              ;;
+          esac
+        done
+
+        if (( i <= $# )) && [[ "''${args[i]}" != -* ]]; then
+          config="''${args[i]}"
+          args[i]=()
+        fi
 
         if (( fast_mode )); then
-          home-manager switch --flake .#current --impure --no-build-output --option warn-dirty false "$@"
+          home-manager switch --flake ".#''$config" --impure --no-build-output --option warn-dirty false "''${args[@]}"
         else
-          home-manager switch --flake .#current --impure --option warn-dirty false "$@"
+          home-manager switch --flake ".#''$config" --impure --option warn-dirty false "''${args[@]}"
         fi
       }
 
@@ -393,6 +416,7 @@
     nixd
     nixfmt-rfc-style
     micromamba
+    smartmontools
     nodejs_20
     yazi
     tig
