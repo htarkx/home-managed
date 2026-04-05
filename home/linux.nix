@@ -98,6 +98,7 @@ in
       bpfmon
       kubernetes-helm
       k9s
+      borgbackup.out
     ]
   );
 
