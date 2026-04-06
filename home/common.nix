@@ -417,6 +417,7 @@
     nixfmt-rfc-style
     micromamba
     smartmontools
+    step-cli
     nodejs_20
     yazi
     tig
