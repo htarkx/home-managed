@@ -27,6 +27,16 @@ echo "=== Add Prometheus repo ==="
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
+echo "=== Bootstrap Grafana Authentik OAuth ==="
+bash "${SCRIPT_DIR}/bootstrap-authentik-grafana-oauth.sh"
+
+echo "=== Ensure monitoring namespace policy labels ==="
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace monitoring \
+  pod-security.kubernetes.io/audit=restricted \
+  pod-security.kubernetes.io/warn=restricted \
+  --overwrite
+
 existing_status="$(helm status monitoring -n monitoring -o json 2>/dev/null | jq -r '.info.status' || true)"
 if [ "$existing_status" = "pending-install" ] || [ "$existing_status" = "failed" ]; then
   echo "=== Remove unfinished monitoring release ==="

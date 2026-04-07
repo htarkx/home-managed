@@ -111,6 +111,23 @@ Linux profile also exposes:
 - `k3s-grafana-pass`
 - `k3s-grafana`
 
+### Monitoring Stack Boundary
+
+The monitoring workload lives here:
+
+- `values/k3s/monitoring.yaml` configures `kube-prometheus-stack`
+- `scripts/k3s/monitoring-deploy.sh` deploys the Helm release
+- `scripts/k3s/bootstrap-authentik-grafana-oauth.sh` creates the Authentik Grafana OAuth provider and the Kubernetes Secret consumed by Grafana
+
+The public/internal edge entry for Grafana lives in the sibling `K8s-Cert` repo:
+
+- `K8s-Cert/manifests/ingress/edge-ingress.yaml` owns the `ob.home` Ingress rule
+- `K8s-Cert/manifests/ingress/edge-certificates.yaml` owns the `ob.home` certificate
+- `K8s-Cert/manifests/ingress/observability-routers.yaml` owns the `ob-router` bridge to `monitoring-grafana.monitoring.svc.cluster.local`
+
+Grafana is intentionally configured as Authentik OIDC-only: the local login form,
+anonymous auth, and basic auth are disabled in `values/k3s/monitoring.yaml`.
+
 ## Customize
 
 - Update `flake.nix` if you want to rename/remove the fixed profiles or add more OS-specific modules.
