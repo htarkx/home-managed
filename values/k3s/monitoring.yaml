@@ -10,7 +10,7 @@ grafana:
   envFromSecret: grafana-authentik-oauth
   grafana.ini:
     server:
-      root_url: https://ob.home
+      root_url: https://ob.htark.dev
     auth:
       disable_login_form: true
       oauth_auto_login: true

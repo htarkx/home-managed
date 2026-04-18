@@ -28,7 +28,7 @@ provider, created = OAuth2Provider.objects.get_or_create(
         "client_secret": token_urlsafe(48),
         "_redirect_uris": [
             {
-                "url": "https://ob.home/login/generic_oauth",
+                "url": "https://ob.htark.dev/login/generic_oauth",
                 "matching_mode": "strict",
             }
         ],
@@ -44,7 +44,7 @@ provider.invalidation_flow = invalidation_flow
 provider.client_type = "confidential"
 provider._redirect_uris = [
     {
-        "url": "https://ob.home/login/generic_oauth",
+        "url": "https://ob.htark.dev/login/generic_oauth",
         "matching_mode": "strict",
     }
 ]
@@ -63,7 +63,7 @@ app, _ = Application.objects.update_or_create(
     defaults={
         "name": "Grafana",
         "provider": provider,
-        "meta_launch_url": "https://ob.home",
+        "meta_launch_url": "https://ob.htark.dev",
         "meta_description": "Grafana observability dashboard",
     },
 )

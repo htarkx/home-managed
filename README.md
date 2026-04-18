@@ -121,8 +121,8 @@ The monitoring workload lives here:
 
 The public/internal edge entry for Grafana lives in the sibling `K8s-Cert` repo:
 
-- `K8s-Cert/manifests/ingress/edge-ingress.yaml` owns the `ob.home` Ingress rule
-- `K8s-Cert/manifests/ingress/edge-certificates.yaml` owns the `ob.home` certificate
+- `K8s-Cert/manifests/ingress/internal-edge-ingress.yaml` owns the `ob.htark.dev` Ingress rule
+- `K8s-Cert/manifests/ingress/internal-edge-certificates.yaml` owns the `ob.htark.dev` certificate
 - `K8s-Cert/manifests/ingress/observability-routers.yaml` owns the `ob-router` bridge to `monitoring-grafana.monitoring.svc.cluster.local`
 
 Grafana is intentionally configured as Authentik OIDC-only: the local login form,
