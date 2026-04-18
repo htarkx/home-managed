@@ -351,6 +351,7 @@
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/share/npm-global/bin"
+    "${config.home.homeDirectory}/.local/bin"
   ];
 
   home.file.".npmrc".text = ''
