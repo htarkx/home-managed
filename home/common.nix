@@ -96,6 +96,12 @@
     mkdir -p "$HOME/.config/mamba"
   '';
 
+  home.activation.installClaude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if ! [ -e "$HOME/.local/bin/claude" ]; then
+      ${pkgs.curl}/bin/curl -fsSL https://claude.ai/install.sh | bash
+    fi
+  '';
+
   programs.tmux = {
     enable = true;
     terminal = "tmux-256color";
@@ -351,7 +357,6 @@
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/share/npm-global/bin"
-    "${config.home.homeDirectory}/.local/bin"
   ];
 
   home.file.".npmrc".text = ''
@@ -368,6 +373,9 @@
   // (import ../nixvim.nix { inherit pkgs; });
 
   home.packages = with pkgs; [
+    (pkgs.writeShellScriptBin "claude" ''
+      exec "${config.home.homeDirectory}/.local/bin/claude" "$@"
+    '')
     coreutils
     findutils
     gnugrep
