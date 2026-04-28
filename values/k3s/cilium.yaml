@@ -11,6 +11,9 @@ ipam:
     clusterPoolIPv4PodCIDRList:
       - 10.42.0.0/16
     clusterPoolIPv4MaskSize: 24
+    clusterPoolIPv6PodCIDRList:
+      - fd42::/104
+    clusterPoolIPv6MaskSize: 120
 
 hubble:
   enabled: true
@@ -21,16 +24,53 @@ hubble:
 
 policyEnforcementMode: default
 enableIPv4Masquerade: true
+enableIPv6Masquerade: true
 routingMode: native
 ipv4NativeRoutingCIDR: 10.42.0.0/16
+ipv6NativeRoutingCIDR: fd42::/104
 tunnelProtocol: ""
 
-ingressController:
+# IPv6 enabled only so the auto-generated cilium-ingress CEC binds an
+# extra `[::]:443` listener on the host. k3s services stay IPv4 single-stack.
+# Pods get IPv6 addresses from the ULA pool but east-west traffic still
+# lands on IPv4 ClusterIPs. This replaces the ingress-ipv6-bridge socat
+# DaemonSet, which lost real client IPv6 source IPs and broke iOS
+# NSURLSession HTTP/2 multiplexing under thumbnail-load (errSSLFatalAlert
+# -9802 in iOS Immich while Chrome/other devices were fine).
+ipv6:
   enabled: true
-  loadbalancerMode: shared
+
+# LAN entry was cut over to Cilium Gateway API in K8s-Cert commit e942d2a.
+# The classic Ingress controller is disabled because:
+#  - Cilium 1.19 cannot share host :443 between Ingress + Gateway (#39422).
+#  - All previous Ingress resources have HTTPRoute equivalents under
+#    K8s-Cert/manifests/gateway/.
+ingressController:
+  enabled: false
+
+# Cilium 1.19 leaves Gateway API support OFF by default; the controller
+# that programs `gateway.networking.k8s.io/v1` resources only runs when
+# this flag is true. Without it, lan-gateway sits with Programmed=False
+# and host :443 has no listener — the entire LAN HTTPS surface goes dark.
+gatewayAPI:
+  enabled: true
+  # k3s here runs without servicelb (see scripts/k3s/k3s-install.sh).
+  # Without a LoadBalancer controller, the Gateway-API-generated Service
+  # never gets an address → Gateway sticks at Programmed=Pending
+  # ("Address not ready yet") and cilium-envoy never opens host :443.
+  # hostNetwork mode bypasses Service entirely and binds Envoy directly
+  # to the node's :443 — same trick the retired ingressController used.
   hostNetwork:
     enabled: true
-    sharedListenerPort: 443
+
+envoy:
+  securityContext:
+    capabilities:
+      keepCapNetBindService: true
+      envoy:
+        - NET_ADMIN
+        - SYS_ADMIN
+        - NET_BIND_SERVICE
 
 l7Proxy: true
 

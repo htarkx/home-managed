@@ -24,7 +24,7 @@ helm repo update
 
 echo "=== Deploy Cilium (full features) ==="
 helm upgrade --install cilium cilium/cilium \
-  --version 1.16.0 \
+  --version 1.19.3 \
   --namespace kube-system \
   --values "$VALUES_PATH"
 

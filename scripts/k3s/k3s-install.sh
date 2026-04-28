@@ -27,7 +27,9 @@ echo "=== Install k3s ==="
 sudo mkdir -p /etc/rancher/k3s
 sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<EOF
 write-kubeconfig-mode: 0644
-disable: traefik
+disable:
+  - traefik
+  - servicelb
 flannel-backend: none
 node-name: localhost
 EOF
