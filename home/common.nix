@@ -96,7 +96,11 @@
     mkdir -p "$HOME/.config/mamba"
   '';
 
-  home.activation.installClaude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  # Run after linkGeneration so the new home-manager profile is in PATH
+  # (~/.nix-profile/bin/curl, etc.). claude.ai/install.sh internally checks
+  # `command -v curl || command -v wget` — at writeBoundary the profile is
+  # not yet linked, so its bash subshell sees no curl and aborts.
+  home.activation.installClaude = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     if ! [ -e "$HOME/.local/bin/claude" ]; then
       ${pkgs.curl}/bin/curl -fsSL https://claude.ai/install.sh | bash
     fi
