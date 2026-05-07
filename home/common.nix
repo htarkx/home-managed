@@ -96,14 +96,17 @@
     mkdir -p "$HOME/.config/mamba"
   '';
 
-  # claude.ai/install.sh internally runs `command -v curl || command -v wget`
-  # in its own bash subshell. The activation script's PATH does not include
-  # the home-manager profile during any pre-`installPackages` phase, so the
-  # subshell aborts with "Either curl or wget is required" even though the
-  # outer fetch uses `${pkgs.curl}/bin/curl` directly.
+  # claude.ai/install.sh shells out to a moving target of utilities
+  # (curl/wget for fetch, shasum for checksum verify, mkdir/cp/etc for
+  # placement, possibly tar/gzip for unpack). The home-manager activation
+  # PATH doesn't include the user profile binaries until installPackages,
+  # and even then the running script's env is frozen — so the bash
+  # subshell that runs install.sh sees a stripped PATH and fails.
   #
-  # Fix: wrap the call in a subshell with PATH explicitly populated from
-  # nix store paths. Independent of activation phase ordering.
+  # Fix: explicit PATH built from (a) nix store bin/ for the utilities
+  # we know it needs, plus (b) /usr/bin:/bin as a system fallback for
+  # anything the upstream script might add later. Robust to claude.ai's
+  # script evolving its dependency set.
   home.activation.installClaude = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     if ! [ -e "$HOME/.local/bin/claude" ]; then
       (
@@ -117,7 +120,8 @@
           gnutar
           gzip
           which
-        ])}:$PATH"
+          perl     # shasum (claude.ai/install.sh uses for checksum verify)
+        ])}:/usr/bin:/bin:$PATH"
         curl -fsSL https://claude.ai/install.sh | bash
       )
     fi
