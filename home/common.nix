@@ -381,6 +381,10 @@
   };
 
   home.sessionPath = [
+    # claude code installs here; was previously not in PATH and forced
+    # the post-install warning to suggest editing .zshrc manually
+    # (which would be clobbered by the next home-manager switch).
+    "${config.home.homeDirectory}/.local/bin"
     "${config.home.homeDirectory}/.local/share/npm-global/bin"
   ];
 
