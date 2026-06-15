@@ -402,9 +402,6 @@
   // (import ../nixvim.nix { inherit pkgs; });
 
   home.packages = with pkgs; [
-    (pkgs.writeShellScriptBin "claude" ''
-      exec "${config.home.homeDirectory}/.local/bin/claude" "$@"
-    '')
     coreutils
     findutils
     gnugrep
