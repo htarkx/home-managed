@@ -217,6 +217,11 @@
     ];
 
     initContent = ''
+      # Re-assert user PATH for interactive shells. hm-session-vars.sh prepends
+      # ~/.local/bin via a once-only guard ($__HM_SESS_VARS_SOURCED); a long-lived
+      # VSCode server inherits that flag and its terminals skip the prepend.
+      export PATH="$HOME/.local/bin:$HOME/.local/share/npm-global/bin:$PATH"
+
       hm_switch() {
         local fast_mode=0
         local config="current"
