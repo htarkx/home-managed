@@ -217,6 +217,16 @@
     ];
 
     initContent = ''
+      # Re-source the Nix daemon profile. macOS system updates periodically
+      # rewrite /etc/zshrc back to the vendor version, dropping the installer's
+      # nix-daemon.sh block; that takes the whole nix toolchain and
+      # ~/.nix-profile/bin off PATH. Sourcing here (guarded internally by
+      # $__ETC_PROFILE_NIX_SOURCED, so it is a no-op when /etc/zshrc still runs
+      # it) makes interactive shells self-heal after such an update.
+      if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+        . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+      fi
+
       # Re-assert user PATH for interactive shells. hm-session-vars.sh prepends
       # ~/.local/bin via a once-only guard ($__HM_SESS_VARS_SOURCED); a long-lived
       # VSCode server inherits that flag and its terminals skip the prepend.
@@ -367,6 +377,13 @@
     enableCompletion = true;
     package = pkgs.bashInteractive;
     bashrcExtra = ''
+      # See the zsh initContent note: macOS updates rewrite /etc/{zshrc,bashrc}
+      # and drop the nix-daemon.sh block, taking nix off PATH. Re-source it here
+      # (guarded internally by $__ETC_PROFILE_NIX_SOURCED) so shells self-heal.
+      if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+        . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+      fi
+
       export LANG=C.UTF-8
       export LC_ALL=C.UTF-8
       export LC_CTYPE=C.UTF-8
