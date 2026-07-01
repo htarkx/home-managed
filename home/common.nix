@@ -345,6 +345,12 @@
           fi
         )
       }
+
+      # Initialize zoxide last (see programs.zoxide note) so its chpwd hook is
+      # registered after powerlevel10k / zsh-vi-mode / syntax-highlighting.
+      if command -v zoxide >/dev/null 2>&1; then
+        eval "$(zoxide init zsh --cmd cd)"
+      fi
     '';
   };
 
@@ -352,7 +358,11 @@
 
   programs.zoxide = {
     enable = true;
-    enableZshIntegration = true;
+    # zoxide must initialize AFTER every hook-registering plugin (powerlevel10k,
+    # zsh-vi-mode, zsh-syntax-highlighting); home-manager's integration evals it
+    # near the top of .zshrc, so `zoxide doctor` warns it is not last. We disable
+    # it here and re-init at the tail of initContent instead.
+    enableZshIntegration = false;
     options = [ "--cmd cd" ];
   };
 
