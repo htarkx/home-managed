@@ -216,7 +216,15 @@
       }
     ];
 
-    initContent = ''
+    initContent = lib.mkMerge [
+      # 直接 source omz 插件（未走 oh-my-zsh.sh），需在插件加载前
+      # 手动设置 ZSH_CACHE_DIR 并创建 completions 目录，
+      # 否则 docker 等插件会报 `tee: /completions/_docker: No such file or directory`
+      (lib.mkBefore ''
+        export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
+        mkdir -p "$ZSH_CACHE_DIR/completions"
+      '')
+      ''
       # Re-source the Nix daemon profile. macOS system updates periodically
       # rewrite /etc/zshrc back to the vendor version, dropping the installer's
       # nix-daemon.sh block; that takes the whole nix toolchain and
@@ -345,13 +353,12 @@
           fi
         )
       }
-
-      # Initialize zoxide last (see programs.zoxide note) so its chpwd hook is
-      # registered after powerlevel10k / zsh-vi-mode / syntax-highlighting.
-      if command -v zoxide >/dev/null 2>&1; then
-        eval "$(zoxide init zsh --cmd cd)"
-      fi
-    '';
+      ''
+      # zoxide 必须在所有插件之后初始化，否则会触发 doctor 警告
+      (lib.mkAfter ''
+        eval "$(${pkgs.zoxide}/bin/zoxide init zsh --cmd cd)"
+      '')
+    ];
   };
 
   programs.fzf.enable = true;
