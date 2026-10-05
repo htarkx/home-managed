@@ -355,8 +355,12 @@
       }
       ''
       # zoxide 必须在所有插件之后初始化，否则会触发 doctor 警告
+      # Claude Code（CLAUDECODE=1）会把 shell 函数快照复用但丢掉 chpwd_functions，
+      # 导致 zoxide 的 cd 每次都报 doctor 警告；agent 里的 cd 也不该模糊跳转，故跳过
       (lib.mkAfter ''
-        eval "$(${pkgs.zoxide}/bin/zoxide init zsh --cmd cd)"
+        if [[ -z "$CLAUDECODE" ]]; then
+          eval "$(${pkgs.zoxide}/bin/zoxide init zsh --cmd cd)"
+        fi
       '')
     ];
   };
