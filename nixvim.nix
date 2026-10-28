@@ -30,7 +30,6 @@
   };
 
   extraPlugins = [
-    pkgs.vimPlugins.copilot-vim
     pkgs.vimPlugins.hardtime-nvim
     pkgs.vimPlugins.vim-be-good
   ];
