@@ -15,42 +15,44 @@
 
   programs.home-manager.enable = true;
   news.display = "silent";
-  home.activation.installPackages = lib.mkForce (lib.hm.dag.entryAfter [ "writeBoundary" ] (
-    if config.submoduleSupport.externalPackageInstall then
-      ''
-        nixProfileRemove home-manager-path
-      ''
-    else
-      ''
-        function nixReplaceProfile() {
-          local oldNix="$(command -v nix)"
+  home.activation.installPackages = lib.mkForce (
+    lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      if config.submoduleSupport.externalPackageInstall then
+        ''
+          nixProfileRemove home-manager-path
+        ''
+      else
+        ''
+          function nixReplaceProfile() {
+            local oldNix="$(command -v nix)"
 
-          nixProfileRemove 'home-manager-path'
+            nixProfileRemove 'home-manager-path'
 
-          run $oldNix profile add $1
-        }
+            run $oldNix profile add $1
+          }
 
-        if [[ -e ${config.home.profileDirectory}/manifest.json ]] ; then
-          INSTALL_CMD="nix profile add"
-          INSTALL_CMD_ACTUAL="nixReplaceProfile"
-          LIST_CMD="nix profile list"
-          REMOVE_CMD_SYNTAX='nix profile remove {number | store path}'
-        else
-          INSTALL_CMD="nix-env -i"
-          INSTALL_CMD_ACTUAL="run nix-env -i"
-          LIST_CMD="nix-env -q"
-          REMOVE_CMD_SYNTAX='nix-env -e {package name}'
-        fi
+          if [[ -e ${config.home.profileDirectory}/manifest.json ]] ; then
+            INSTALL_CMD="nix profile add"
+            INSTALL_CMD_ACTUAL="nixReplaceProfile"
+            LIST_CMD="nix profile list"
+            REMOVE_CMD_SYNTAX='nix profile remove {number | store path}'
+          else
+            INSTALL_CMD="nix-env -i"
+            INSTALL_CMD_ACTUAL="run nix-env -i"
+            LIST_CMD="nix-env -q"
+            REMOVE_CMD_SYNTAX='nix-env -e {package name}'
+          fi
 
-        if ! $INSTALL_CMD_ACTUAL ${config.home.path} ; then
-          echo
-          _iError $'Oops, Nix failed to install your new Home Manager profile!\n\nPerhaps there is a conflict with a package that was installed using\n"%s"? Try running\n\n    %s\n\nand if there is a conflicting package you can remove it with\n\n    %s\n\nThen try activating your Home Manager configuration again.' "$INSTALL_CMD" "$LIST_CMD" "$REMOVE_CMD_SYNTAX"
-          exit 1
-        fi
-        unset -f nixReplaceProfile
-        unset INSTALL_CMD INSTALL_CMD_ACTUAL LIST_CMD REMOVE_CMD_SYNTAX
-      ''
-  ));
+          if ! $INSTALL_CMD_ACTUAL ${config.home.path} ; then
+            echo
+            _iError $'Oops, Nix failed to install your new Home Manager profile!\n\nPerhaps there is a conflict with a package that was installed using\n"%s"? Try running\n\n    %s\n\nand if there is a conflicting package you can remove it with\n\n    %s\n\nThen try activating your Home Manager configuration again.' "$INSTALL_CMD" "$LIST_CMD" "$REMOVE_CMD_SYNTAX"
+            exit 1
+          fi
+          unset -f nixReplaceProfile
+          unset INSTALL_CMD INSTALL_CMD_ACTUAL LIST_CMD REMOVE_CMD_SYNTAX
+        ''
+    )
+  );
 
   home.shellAliases = {
     sudo = "sudo -E";
@@ -118,18 +120,23 @@
   home.activation.installClaude = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     if ! [ -e "$HOME/.local/bin/claude" ]; then
       (
-        export PATH="${lib.makeBinPath (with pkgs; [
-          curl
-          wget
-          coreutils
-          gnused
-          gnugrep
-          gawk
-          gnutar
-          gzip
-          which
-          perl     # shasum (claude.ai/install.sh uses for checksum verify)
-        ])}:/usr/bin:/bin:$PATH"
+        export PATH="${
+          lib.makeBinPath (
+            with pkgs;
+            [
+              curl
+              wget
+              coreutils
+              gnused
+              gnugrep
+              gawk
+              gnutar
+              gzip
+              which
+              perl # shasum (claude.ai/install.sh uses for checksum verify)
+            ]
+          )
+        }:/usr/bin:/bin:$PATH"
         curl -fsSL https://claude.ai/install.sh | bash
       )
     fi
@@ -233,134 +240,134 @@
         mkdir -p "$ZSH_CACHE_DIR/completions"
       '')
       ''
-      # Re-source the Nix daemon profile. macOS system updates periodically
-      # rewrite /etc/zshrc back to the vendor version, dropping the installer's
-      # nix-daemon.sh block; that takes the whole nix toolchain and
-      # ~/.nix-profile/bin off PATH. Sourcing here (guarded internally by
-      # $__ETC_PROFILE_NIX_SOURCED, so it is a no-op when /etc/zshrc still runs
-      # it) makes interactive shells self-heal after such an update.
-      if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-        . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-      fi
-
-      # Re-assert user PATH for interactive shells. hm-session-vars.sh prepends
-      # ~/.local/bin via a once-only guard ($__HM_SESS_VARS_SOURCED); a long-lived
-      # VSCode server inherits that flag and its terminals skip the prepend.
-      export PATH="$HOME/.local/bin:$HOME/.local/share/npm-global/bin:$PATH"
-
-      hm_switch() {
-        local fast_mode=0
-        local config="current"
-        if [[ "$1" == "--fast" ]]; then
-          fast_mode=1
-          shift
-        fi
-        local -a args=("$@")
-        local i=1
-
-        while (( i <= $# )); do
-          case "''${args[i]}" in
-            -b|--backup-ext)
-              (( i += 2 ))
-              ;;
-            --backup-ext=*)
-              (( i += 1 ))
-              ;;
-            *)
-              break
-              ;;
-          esac
-        done
-
-        if (( i <= $# )) && [[ "''${args[i]}" != -* ]]; then
-          config="''${args[i]}"
-          args[i]=()
+        # Re-source the Nix daemon profile. macOS system updates periodically
+        # rewrite /etc/zshrc back to the vendor version, dropping the installer's
+        # nix-daemon.sh block; that takes the whole nix toolchain and
+        # ~/.nix-profile/bin off PATH. Sourcing here (guarded internally by
+        # $__ETC_PROFILE_NIX_SOURCED, so it is a no-op when /etc/zshrc still runs
+        # it) makes interactive shells self-heal after such an update.
+        if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
         fi
 
-        if (( fast_mode )); then
-          home-manager switch --flake ".#''$config" --impure --no-build-output --option warn-dirty false "''${args[@]}"
-        else
-          home-manager switch --flake ".#''$config" --impure --option warn-dirty false "''${args[@]}"
-        fi
-      }
+        # Re-assert user PATH for interactive shells. hm-session-vars.sh prepends
+        # ~/.local/bin via a once-only guard ($__HM_SESS_VARS_SOURCED); a long-lived
+        # VSCode server inherits that flag and its terminals skip the prepend.
+        export PATH="$HOME/.local/bin:$HOME/.local/share/npm-global/bin:$PATH"
 
-      export ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
-      export ZVM_CURSOR_STYLE_ENABLED=true
-      zstyle ':fzf-tab:*' fzf-flags '--color=fg:1,bg:2,hl:3,fg+:4,bg+:5,hl+:6'
-
-      navi-widget() {
-        local cmd
-        cmd=$(navi --print </dev/tty) || return
-        [[ -n "$cmd" ]] && LBUFFER+="$cmd"
-        zle reset-prompt
-      }
-      zle -N navi-widget
-      bindkey -M viins '^[g' navi-widget
-      bindkey -M vicmd '^[g' navi-widget
-
-      lazygit-widget() {
-        lazygit
-        zle reset-prompt
-      }
-      zle -N lazygit-widget
-      bindkey -M viins '^g' lazygit-widget
-      bindkey -M vicmd '^g' lazygit-widget
-
-      [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-      if command -v micromamba >/dev/null 2>&1; then
-        export MAMBA_ROOT_PREFIX="$HOME/.mamba"
-        eval "$(micromamba shell hook --shell zsh)"
-      fi
-
-      hms() {
-        local root
-        local use_auto_backup=1
-        root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-          echo "hms: not inside a git repository" >&2
-          return 1
-        }
-        for arg in "$@"; do
-          case "$arg" in
-            -b|--backup-ext)
-              use_auto_backup=0
-              ;;
-          esac
-        done
-
-        (
-          cd "$root" || exit
-          if (( use_auto_backup )); then
-            hm_switch -b "backup-$(date +%Y%m%d-%H%M%S)" "$@"
-          else
-            hm_switch "$@"
+        hm_switch() {
+          local fast_mode=0
+          local config="current"
+          if [[ "$1" == "--fast" ]]; then
+            fast_mode=1
+            shift
           fi
-        )
-      }
+          local -a args=("$@")
+          local i=1
 
-      hms-fast() {
-        local root
-        local use_auto_backup=1
-        root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-          echo "hms-fast: not inside a git repository" >&2
-          return 1
-        }
-        for arg in "$@"; do
-          case "$arg" in
-            -b|--backup-ext)
-              use_auto_backup=0
-              ;;
-          esac
-        done
+          while (( i <= $# )); do
+            case "''${args[i]}" in
+              -b|--backup-ext)
+                (( i += 2 ))
+                ;;
+              --backup-ext=*)
+                (( i += 1 ))
+                ;;
+              *)
+                break
+                ;;
+            esac
+          done
 
-        (
-          cd "$root" || exit
-          if (( use_auto_backup )); then
-            hm_switch --fast -b "backup-$(date +%Y%m%d-%H%M%S)" "$@"
-          else
-            hm_switch --fast "$@"
+          if (( i <= $# )) && [[ "''${args[i]}" != -* ]]; then
+            config="''${args[i]}"
+            args[i]=()
           fi
-        )
-      }
+
+          if (( fast_mode )); then
+            home-manager switch --flake ".#''$config" --impure --no-build-output --option warn-dirty false "''${args[@]}"
+          else
+            home-manager switch --flake ".#''$config" --impure --option warn-dirty false "''${args[@]}"
+          fi
+        }
+
+        export ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+        export ZVM_CURSOR_STYLE_ENABLED=true
+        zstyle ':fzf-tab:*' fzf-flags '--color=fg:1,bg:2,hl:3,fg+:4,bg+:5,hl+:6'
+
+        navi-widget() {
+          local cmd
+          cmd=$(navi --print </dev/tty) || return
+          [[ -n "$cmd" ]] && LBUFFER+="$cmd"
+          zle reset-prompt
+        }
+        zle -N navi-widget
+        bindkey -M viins '^[g' navi-widget
+        bindkey -M vicmd '^[g' navi-widget
+
+        lazygit-widget() {
+          lazygit
+          zle reset-prompt
+        }
+        zle -N lazygit-widget
+        bindkey -M viins '^g' lazygit-widget
+        bindkey -M vicmd '^g' lazygit-widget
+
+        [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+        if command -v micromamba >/dev/null 2>&1; then
+          export MAMBA_ROOT_PREFIX="$HOME/.mamba"
+          eval "$(micromamba shell hook --shell zsh)"
+        fi
+
+        hms() {
+          local root
+          local use_auto_backup=1
+          root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+            echo "hms: not inside a git repository" >&2
+            return 1
+          }
+          for arg in "$@"; do
+            case "$arg" in
+              -b|--backup-ext)
+                use_auto_backup=0
+                ;;
+            esac
+          done
+
+          (
+            cd "$root" || exit
+            if (( use_auto_backup )); then
+              hm_switch -b "backup-$(date +%Y%m%d-%H%M%S)" "$@"
+            else
+              hm_switch "$@"
+            fi
+          )
+        }
+
+        hms-fast() {
+          local root
+          local use_auto_backup=1
+          root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+            echo "hms-fast: not inside a git repository" >&2
+            return 1
+          }
+          for arg in "$@"; do
+            case "$arg" in
+              -b|--backup-ext)
+                use_auto_backup=0
+                ;;
+            esac
+          done
+
+          (
+            cd "$root" || exit
+            if (( use_auto_backup )); then
+              hm_switch --fast -b "backup-$(date +%Y%m%d-%H%M%S)" "$@"
+            else
+              hm_switch --fast "$@"
+            fi
+          )
+        }
       ''
       # zoxide 必须在所有插件之后初始化，否则会触发 doctor 警告
       # Claude Code（CLAUDECODE=1）会把 shell 函数快照复用但丢掉 chpwd_functions，

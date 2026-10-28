@@ -25,7 +25,10 @@
     incsearch = true;
     hlsearch = true;
 
-    completeopt = [ "menuone" "noselect" ];
+    completeopt = [
+      "menuone"
+      "noselect"
+    ];
     timeoutlen = 400;
   };
 
@@ -57,7 +60,10 @@
         win = {
           border = "rounded";
           no_overlap = false;
-          padding = [ 1 2 ];
+          padding = [
+            1
+            2
+          ];
           title = true;
           title_pos = "center";
           zindex = 1000;
