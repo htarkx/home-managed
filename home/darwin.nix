@@ -1,6 +1,7 @@
 { pkgs, lib, ... }:
-let
-  vscodeDarwinSettings = {
+{
+  # Shared keys live in common.nix; see vscode.nix for how settings.json is written.
+  my.vscode.settings = {
     "git.autofetch" = true;
     "git.confirmSync" = false;
     "git.enableSmartCommit" = true;
@@ -9,13 +10,10 @@ let
     "code-runner.runInTerminal" = true;
     "cmake.options.statusBarVisibility" = "icon";
     "solidity.telemetry" = true;
-    "github.copilot.nextEditSuggestions.enabled" = true;
     "explorer.confirmDelete" = false;
     "workbench.secondarySideBar.defaultVisibility" = "hidden";
     "chatgpt.openOnStartup" = true;
     "go.toolsEnvVars" = { };
-    "gitlens.ai.model" = "vscode";
-    "gitlens.ai.vscode.model" = "copilot:gpt-4.1";
     "docker.extension.enableComposeLanguageServer" = false;
     "editor.fontFamily" = "JetBrainsMono Nerd Font";
     "terminal.integrated.profiles.linux" = {
@@ -41,14 +39,6 @@ let
     "extensions.experimental.affinity" = {
       "asvetliakov.vscode-neovim" = 1;
     };
-    "nix.serverPath" = "nixd";
-    "nix.enableLanguageServer" = true;
-  };
-in
-{
-  home.file."Library/Application Support/Code/User/settings.json" = {
-    force = true;
-    text = builtins.toJSON vscodeDarwinSettings;
   };
 
   home.packages = lib.mkAfter (

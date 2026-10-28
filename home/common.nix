@@ -5,6 +5,14 @@
   ...
 }:
 {
+  imports = [ ./vscode.nix ];
+
+  # VS Code settings shared by every machine; OS-specific ones are in darwin.nix / linux.nix.
+  my.vscode.settings = {
+    "nix.enableLanguageServer" = true;
+    "nix.serverPath" = "nixd";
+  };
+
   programs.home-manager.enable = true;
   news.display = "silent";
   home.activation.installPackages = lib.mkForce (lib.hm.dag.entryAfter [ "writeBoundary" ] (

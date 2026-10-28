@@ -5,18 +5,6 @@
   ...
 }:
 let
-  vscodeServerSettings = {
-    "terminal.integrated.defaultProfile.linux" = "zsh";
-    "terminal.integrated.profiles.linux" = {
-      zsh = {
-        path = "${config.home.homeDirectory}/.nix-profile/bin/zsh";
-        args = [ "-l" ];
-      };
-    };
-    "nix.enableLanguageServer" = true;
-    "nix.serverPath" = "nixd";
-  };
-
   vscodeServerExtensions = [
     "eamodio.gitlens"
     "golang.go"
@@ -33,6 +21,18 @@ let
 in
 {
   targets.genericLinux.enable = true;
+
+  # VS Code server machine settings (~/.vscode-server/data/Machine/settings.json, see vscode.nix);
+  # shared keys live in common.nix.
+  my.vscode.settings = {
+    "terminal.integrated.defaultProfile.linux" = "zsh";
+    "terminal.integrated.profiles.linux" = {
+      zsh = {
+        path = "${config.home.homeDirectory}/.nix-profile/bin/zsh";
+        args = [ "-l" ];
+      };
+    };
+  };
 
   programs.zsh.initContent = lib.mkBefore ''
     ports() {
@@ -69,13 +69,6 @@ in
       echo "$installed" | grep -Fxiq "$ext" && continue
       "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1
     done <<< "${lib.concatStringsSep "\n" vscodeServerExtensions}"
-  '';
-
-  home.activation.writeVscodeServerSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings_dir="$HOME/.vscode-server/data/Machine"
-    settings_file="$settings_dir/settings.json"
-    mkdir -p "$settings_dir"
-    printf '%s\n' ${lib.escapeShellArg (builtins.toJSON vscodeServerSettings)} > "$settings_file"
   '';
 
   home.packages = lib.mkAfter (

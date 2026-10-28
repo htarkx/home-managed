@@ -52,24 +52,25 @@ Notes:
 On Linux fresh machines, VS Code integrated terminal may still open `bash` by default even after Home Manager enables `zsh`.
 This is because VS Code has its own terminal profile settings and does not always follow your login shell.
 
-Option A (recommended): manage VS Code terminal profile manually
+This repo declares that profile for you (`home/linux.nix`, written to
+`~/.vscode-server/data/Machine/settings.json` for Remote SSH), see below.
 
-```json
-// ~/.vscode-server/data/Machine/settings.json (Remote SSH)
-// or ~/.config/Code/User/settings.json (local Linux desktop)
-{
-  "terminal.integrated.defaultProfile.linux": "zsh",
-  "terminal.integrated.profiles.linux": {
-    "zsh": {
-      "path": "/home/<user>/.nix-profile/bin/zsh",
-      "args": ["-l"]
-    }
-  }
-}
-```
+### VS Code settings (single source of truth)
 
-Option B: manage this file with Home Manager as `xdg.configFile`/`home.file`.
-This is possible, but many users prefer keeping editor-specific settings outside this repo to avoid overriding personal IDE preferences across machines.
+`home/vscode.nix` owns `settings.json`. Every module declares keys under `my.vscode.settings`
+(shared ones in `home/common.nix`, OS-specific ones in `home/darwin.nix` / `home/linux.nix`); the module
+system merges them and rejects one key defined twice with different values.
+
+On `home-manager switch` the declared keys are merged into the real file with `jq`: declared keys win,
+keys written by VS Code, extensions or the settings UI are kept. The file stays writable, so VS Code never
+keeps unsaved settings around (a read-only `home.file` symlink caused a "save settings.json?" prompt on
+every quit).
+
+- `vscode-settings-drift` — keys VS Code added (`only_in_settings_json`) and declared keys changed in the
+  UI (`differs_from_declaration`, reset on the next switch). Promote what you want to keep into Nix.
+- `my.vscode.prune = true;` — drop undeclared keys on every switch (fully declarative).
+- A `settings.json` with comments (JSONC) cannot be merged; it is backed up to `settings.json.bak-<time>`
+  and rewritten from the declaration.
 
 ## Usage
 
