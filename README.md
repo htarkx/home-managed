@@ -11,8 +11,10 @@ Everything beyond a core shell is an **optional component** (`my.<component>.ena
 | `dev` | + LSPs, node/micromamba/nixd, net CLI, k8s clients, TUI apps, nix-index, VS Code, Claude Code | ~0.75 GiB | ~4.3 GiB |
 | `full` | everything, identical to the pre-component setup | ~1.3 GiB | ~7.7 GiB |
 
-Measured for x86_64-linux against cache.nixos.org. "Peak" includes build-time inputs of the few local
-builds (nixvim wrapper, docs); `nix-collect-garbage` reclaims part of it afterwards.
+Measured for x86_64-linux against cache.nixos.org: the Home Manager closure plus build-time inputs of
+the few local builds (nixvim wrapper, docs). A fresh machine's whole `/nix/store` ends up larger — about
+3.7 GB after `minimal` in an Ubuntu container — since it also holds Nix itself, the flake inputs and
+nixpkgs sources; `nix-collect-garbage -d` reclaims part of it afterwards.
 
 `.#current` (what the setup script and a bare `hms` apply) keeps each machine on what it already has
 (`lib/current.nix`):
