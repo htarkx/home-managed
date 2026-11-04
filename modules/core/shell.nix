@@ -1,3 +1,4 @@
+# Always installed: zsh + plugins, bash fallback, fzf / zoxide / atuin / direnv, and the `hms` helpers.
 {
   pkgs,
   lib,
@@ -5,181 +6,6 @@
   ...
 }:
 {
-  imports = [ ./vscode.nix ];
-
-  # VS Code settings shared by every machine; OS-specific ones are in darwin.nix / linux.nix.
-  my.vscode.settings = {
-    "nix.enableLanguageServer" = true;
-    "nix.serverPath" = "nixd";
-  };
-
-  programs.home-manager.enable = true;
-  news.display = "silent";
-  home.activation.installPackages = lib.mkForce (
-    lib.hm.dag.entryAfter [ "writeBoundary" ] (
-      if config.submoduleSupport.externalPackageInstall then
-        ''
-          nixProfileRemove home-manager-path
-        ''
-      else
-        ''
-          function nixReplaceProfile() {
-            local oldNix="$(command -v nix)"
-
-            nixProfileRemove 'home-manager-path'
-
-            run $oldNix profile add $1
-          }
-
-          if [[ -e ${config.home.profileDirectory}/manifest.json ]] ; then
-            INSTALL_CMD="nix profile add"
-            INSTALL_CMD_ACTUAL="nixReplaceProfile"
-            LIST_CMD="nix profile list"
-            REMOVE_CMD_SYNTAX='nix profile remove {number | store path}'
-          else
-            INSTALL_CMD="nix-env -i"
-            INSTALL_CMD_ACTUAL="run nix-env -i"
-            LIST_CMD="nix-env -q"
-            REMOVE_CMD_SYNTAX='nix-env -e {package name}'
-          fi
-
-          if ! $INSTALL_CMD_ACTUAL ${config.home.path} ; then
-            echo
-            _iError $'Oops, Nix failed to install your new Home Manager profile!\n\nPerhaps there is a conflict with a package that was installed using\n"%s"? Try running\n\n    %s\n\nand if there is a conflicting package you can remove it with\n\n    %s\n\nThen try activating your Home Manager configuration again.' "$INSTALL_CMD" "$LIST_CMD" "$REMOVE_CMD_SYNTAX"
-            exit 1
-          fi
-          unset -f nixReplaceProfile
-          unset INSTALL_CMD INSTALL_CMD_ACTUAL LIST_CMD REMOVE_CMD_SYNTAX
-        ''
-    )
-  );
-
-  home.shellAliases = {
-    sudo = "sudo -E";
-    # Base muscle memory
-    ls = "eza";
-    ll = "eza -lah --group-directories-first";
-    cat = "bat";
-    # grep = "rg";  # Disabled: too common, use native command
-    # find = "fd";   # Disabled: too common, use native command
-
-    # Observability
-    top = "btop";
-    # df = "duf";    # Disabled: too common, use native command
-    # du = "dust";   # Disabled: too common, use native command
-    f = "fastfetch";
-
-    # Git workflow
-    g = "git";
-    gs = "git status -sb";
-    gd = "git diff";
-    gl = "git log --oneline --graph --decorate";
-    lg = "lazygit";
-    gui = "gitui";
-
-    # Networking quick checks
-    myip = "curl -fsSL ifconfig.me | sed 's/%.*$//'";
-    nt = "sudo ${config.home.profileDirectory}/bin/nexttrace";
-    myip4 = "curl -4 -fsSL ifconfig.me | sed 's/%.*$//'";
-    myip6 = "curl -6 -fsSL ifconfig.me | sed 's/%.*$//'";
-    digg = "dig +short";
-
-    # Micromamba (avoid aliasing `mamba` to prevent conflicts)
-    mm = "micromamba";
-    mma = "micromamba activate";
-    mmd = "micromamba deactivate";
-    mml = "micromamba env list";
-  };
-
-  home.activation.removeBrokenNvimConfigLink = lib.hm.dag.entryBefore [ "linkGeneration" ] ''
-    if [ -L "$HOME/.config/nvim" ] && [ ! -e "$HOME/.config/nvim" ]; then
-      rm -f "$HOME/.config/nvim"
-    fi
-  '';
-
-  home.activation.ensureNpmPrefix = lib.hm.dag.entryBefore [ "linkGeneration" ] ''
-    mkdir -p "$HOME/.local/share/npm-global/bin"
-  '';
-
-  home.activation.ensureMambaRootPrefix = lib.hm.dag.entryBefore [ "linkGeneration" ] ''
-    mkdir -p "$HOME/.mamba"
-    mkdir -p "$HOME/.config/mamba"
-  '';
-
-  # claude.ai/install.sh shells out to a moving target of utilities
-  # (curl/wget for fetch, shasum for checksum verify, mkdir/cp/etc for
-  # placement, possibly tar/gzip for unpack). The home-manager activation
-  # PATH doesn't include the user profile binaries until installPackages,
-  # and even then the running script's env is frozen — so the bash
-  # subshell that runs install.sh sees a stripped PATH and fails.
-  #
-  # Fix: explicit PATH built from (a) nix store bin/ for the utilities
-  # we know it needs, plus (b) /usr/bin:/bin as a system fallback for
-  # anything the upstream script might add later. Robust to claude.ai's
-  # script evolving its dependency set.
-  home.activation.installClaude = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    if ! [ -e "$HOME/.local/bin/claude" ]; then
-      (
-        export PATH="${
-          lib.makeBinPath (
-            with pkgs;
-            [
-              curl
-              wget
-              coreutils
-              gnused
-              gnugrep
-              gawk
-              gnutar
-              gzip
-              which
-              perl # shasum (claude.ai/install.sh uses for checksum verify)
-            ]
-          )
-        }:/usr/bin:/bin:$PATH"
-        curl -fsSL https://claude.ai/install.sh | bash
-      )
-    fi
-  '';
-
-  programs.tmux = {
-    enable = true;
-    terminal = "tmux-256color";
-    clock24 = true;
-    baseIndex = 1;
-    keyMode = "vi";
-    mouse = true;
-    plugins = with pkgs.tmuxPlugins; [
-      sensible
-      tmux-fzf
-      resurrect
-      continuum
-      {
-        plugin = catppuccin;
-        extraConfig = ''
-          set -g @catppuccin_flavor 'mocha'
-          set -g @catppuccin_window_tabs_enabled on
-          set -g @catppuccin_date_time "%H:%M"
-          set -g @catppuccin_status_modules_right "directory session date_time"
-          set -g @catppuccin_status_left_separator "█"
-          set -g @catppuccin_status_right_separator "█"
-          set -g @catppuccin_directory_text "#{pane_current_path}"
-        '';
-      }
-    ];
-    extraConfig = ''
-      bind -n C-h select-pane -L
-      bind -n C-j select-pane -D
-      bind -n C-k select-pane -U
-      bind -n C-l select-pane -R
-
-      set -g @resurrect-capture-pane-contents 'on'
-      set -g @continuum-restore 'on'
-
-      set -g status-position top
-    '';
-  };
-
   programs.zsh = {
     enable = true;
     enableCompletion = true;
@@ -255,9 +81,14 @@
         # VSCode server inherits that flag and its terminals skip the prepend.
         export PATH="$HOME/.local/bin:$HOME/.local/share/npm-global/bin:$PATH"
 
+        # Target selection: an explicit name wins (`hms dev`); otherwise hosts/<short hostname>.nix
+        # when it exists; otherwise `current` (re-applies this machine's last selection; see
+        # lib/current.nix).
         hm_switch() {
           local fast_mode=0
           local config="current"
+          local host_file="hosts/$(hostname -s 2>/dev/null).nix"
+          [[ -f "$host_file" ]] && config="''${host_file:t:r}"
           if [[ "$1" == "--fast" ]]; then
             fast_mode=1
             shift
@@ -284,6 +115,7 @@
             args[i]=()
           fi
 
+          echo "hm_switch: .#$config" >&2
           if (( fast_mode )); then
             home-manager switch --flake ".#''$config" --impure --no-build-output --option warn-dirty false "''${args[@]}"
           else
@@ -295,16 +127,6 @@
         export ZVM_CURSOR_STYLE_ENABLED=true
         zstyle ':fzf-tab:*' fzf-flags '--color=fg:1,bg:2,hl:3,fg+:4,bg+:5,hl+:6'
 
-        navi-widget() {
-          local cmd
-          cmd=$(navi --print </dev/tty) || return
-          [[ -n "$cmd" ]] && LBUFFER+="$cmd"
-          zle reset-prompt
-        }
-        zle -N navi-widget
-        bindkey -M viins '^[g' navi-widget
-        bindkey -M vicmd '^[g' navi-widget
-
         lazygit-widget() {
           lazygit
           zle reset-prompt
@@ -314,10 +136,6 @@
         bindkey -M vicmd '^g' lazygit-widget
 
         [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-        if command -v micromamba >/dev/null 2>&1; then
-          export MAMBA_ROOT_PREFIX="$HOME/.mamba"
-          eval "$(micromamba shell hook --shell zsh)"
-        fi
 
         hms() {
           local root
@@ -405,9 +223,6 @@
     nix-direnv.enable = true;
   };
 
-  programs.nix-index.enable = true;
-  programs.nix-index-database.comma.enable = true;
-
   programs.bash = {
     enable = true;
     enableCompletion = true;
@@ -434,8 +249,6 @@
     LC_ALL = "C.UTF-8";
     LC_CTYPE = "C.UTF-8";
     LC_COLLATE = "C.UTF-8";
-    NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm-global";
-    MAMBA_ROOT_PREFIX = "${config.home.homeDirectory}/.mamba";
   };
 
   home.sessionPath = [
@@ -443,78 +256,7 @@
     # the post-install warning to suggest editing .zshrc manually
     # (which would be clobbered by the next home-manager switch).
     "${config.home.homeDirectory}/.local/bin"
-    "${config.home.homeDirectory}/.local/share/npm-global/bin"
   ];
 
-  home.file.".npmrc".text = ''
-    prefix=${config.home.homeDirectory}/.local/share/npm-global
-  '';
-
-  home.file.".config/mamba/mambarc".text = ''
-    root_prefix: ${config.home.homeDirectory}/.mamba
-  '';
-
-  programs.nixvim = {
-    enable = true;
-  }
-  // (import ../nixvim.nix { inherit pkgs; });
-
-  home.packages = with pkgs; [
-    coreutils
-    findutils
-    gnugrep
-    gnused
-    gawk
-    less
-    tree
-    watch
-    ripgrep
-    fd
-    bat
-    eza
-    dust
-    ncdu
-    duf
-    gh
-    git-open
-    btop
-    glances
-    fastfetch
-    inetutils
-    gitui
-    lazygit
-    navi
-    tealdeer
-    zellij
-    pueue
-    trippy
-    tcpdump
-    wireshark
-    iperf3
-    mtr
-    nexttrace
-    nmap
-    dnsutils
-    curl
-    wget
-    httpie
-    openssl
-    ansible
-    wireguard-tools
-    kubectl
-    google-cloud-sdk
-    kops
-    netcat
-    socat
-    nixd
-    nixfmt-rfc-style
-    micromamba
-    smartmontools
-    step-cli
-    nodejs_20
-    yazi
-    tig
-  ];
-
-  home.file.".p10k.zsh".source = ../dotfiles/.p10k.zsh;
+  home.file.".p10k.zsh".source = ../../dotfiles/.p10k.zsh;
 }

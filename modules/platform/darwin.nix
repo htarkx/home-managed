@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 {
-  # Shared keys live in common.nix; see vscode.nix for how settings.json is written.
+  # macOS-only bits. Shared VS Code keys live in components/vscode.nix (which also writes settings.json).
   my.vscode.settings = {
     "git.autofetch" = true;
     "git.confirmSync" = false;

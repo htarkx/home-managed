@@ -23,6 +23,11 @@
       ...
     }:
     let
+      lib = nixpkgs.lib;
+
+      # twisted's test suite fails on darwin, so Hydra has no darwin binary for it (or anything that
+      # depends on it). On Linux the cached build is fine, and overriding it there would only force
+      # local rebuilds of glances & co, so the override is darwin-only.
       twistedNoChecksOverlay =
         final: prev:
         let
@@ -54,100 +59,11 @@
             { }
         );
 
-      mkHome =
-        {
-          system,
-          username,
-          homeDirectory,
-          enableK3s ? false,
-        }:
-        let
-          lib = nixpkgs.lib;
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ twistedNoChecksOverlay ];
-            config = {
-              allowUnfreePredicate =
-                pkg:
-                builtins.elem (lib.getName pkg) [
-                  "copilot.vim"
-                ];
-            };
-          };
-          osModule = if pkgs.stdenv.isDarwin then ./home/darwin.nix else ./home/linux.nix;
-        in
-        home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-          modules = [
-            nixvim.homeModules.nixvim
-            nix-index-database.homeModules.nix-index
-            ./home/common.nix
-            ./home/k3s.nix
-            osModule
-            {
-              home.username = username;
-              home.homeDirectory = homeDirectory;
-              home.stateVersion = "23.11";
-              k3s.enable = enableK3s;
-            }
-          ];
-        };
-
-      envUser = builtins.getEnv "USER";
-      envHome = builtins.getEnv "HOME";
-    in
-    {
-      homeConfigurations = {
-        current = mkHome {
-          system = builtins.currentSystem;
-          username = envUser;
-          homeDirectory = envHome;
-        };
-        k3s = mkHome {
-          system = builtins.currentSystem;
-          username = envUser;
-          homeDirectory = envHome;
-          enableK3s = true;
-        };
-        user-linux = mkHome {
-          system = "x86_64-linux";
-          username = envUser;
-          homeDirectory = envHome;
-        };
-        user-mac = mkHome {
-          system = "aarch64-darwin";
-          username = envUser;
-          homeDirectory = envHome;
-        };
-        user-mac-intel = mkHome {
-          system = "x86_64-darwin";
-          username = envUser;
-          homeDirectory = envHome;
-        };
-      }
-      // builtins.listToAttrs (
-        if envUser != "" then
-          [
-            {
-              name = envUser;
-              value = mkHome {
-                system = builtins.currentSystem;
-                username = envUser;
-                homeDirectory = envHome;
-              };
-            }
-          ]
-        else
-          [ ]
-      );
-    }
-    // flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        lib = nixpkgs.lib;
-        pkgs = import nixpkgs {
+      mkPkgs =
+        system:
+        import nixpkgs {
           inherit system;
-          overlays = [ twistedNoChecksOverlay ];
+          overlays = lib.optional (lib.hasSuffix "-darwin" system) twistedNoChecksOverlay;
           config = {
             allowUnfreePredicate =
               pkg:
@@ -156,6 +72,96 @@
               ];
           };
         };
+
+      # `modules` selects what gets installed: a preset (presets/*.nix) or a host file (hosts/*.nix).
+      mkHome =
+        {
+          system ? builtins.currentSystem,
+          username ? envUser,
+          homeDirectory ? envHome,
+          modules,
+        }:
+        let
+          pkgs = mkPkgs system;
+          osModule =
+            if pkgs.stdenv.isDarwin then ./modules/platform/darwin.nix else ./modules/platform/linux.nix;
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            nixvim.homeModules.nixvim
+            nix-index-database.homeModules.nix-index
+            ./modules
+            osModule
+            {
+              home.username = username;
+              home.homeDirectory = homeDirectory;
+              home.stateVersion = "23.11";
+            }
+          ]
+          ++ modules;
+        };
+
+      envUser = builtins.getEnv "USER";
+      envHome = builtins.getEnv "HOME";
+
+      presets = {
+        minimal = [ ./presets/minimal.nix ];
+        dev = [ ./presets/dev.nix ];
+        full = [ ./presets/full.nix ];
+      };
+
+      # Every hosts/<name>.nix becomes homeConfigurations.<name>; files starting with `_` are skipped.
+      hosts =
+        lib.mapAttrs'
+          (file: _: {
+            name = lib.removeSuffix ".nix" file;
+            value = mkHome { modules = [ (./hosts + "/${file}") ]; };
+          })
+          (
+            lib.filterAttrs (
+              file: type: type == "regular" && lib.hasSuffix ".nix" file && !lib.hasPrefix "_" file
+            ) (builtins.readDir ./hosts)
+          );
+
+      current = import ./lib/current.nix {
+        inherit lib;
+        home = envHome;
+        user = envUser;
+      };
+    in
+    {
+      homeConfigurations = {
+        # Last applied selection / inferred from an existing install / minimal; see lib/current.nix.
+        current = mkHome {
+          modules = [ (builtins.trace "home-managed .#current: ${current.source}" current.module) ];
+        };
+        minimal = mkHome { modules = presets.minimal; };
+        dev = mkHome { modules = presets.dev; };
+        full = mkHome { modules = presets.full; };
+        k3s = mkHome { modules = presets.full ++ [ { my.k8s.cilium = true; } ]; };
+        user-linux = mkHome {
+          system = "x86_64-linux";
+          modules = presets.full;
+        };
+        user-mac = mkHome {
+          system = "aarch64-darwin";
+          modules = presets.full;
+        };
+        user-mac-intel = mkHome {
+          system = "x86_64-darwin";
+          modules = presets.full;
+        };
+      }
+      // hosts
+      // lib.optionalAttrs (envUser != "") {
+        ${envUser} = mkHome { modules = presets.full; };
+      };
+    }
+    // flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = mkPkgs system;
         nvim = nixvim.legacyPackages.${system}.makeNixvim (import ./nixvim.nix { inherit pkgs; });
       in
       {

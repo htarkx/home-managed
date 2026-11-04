@@ -1,4 +1,20 @@
-{ pkgs, ... }:
+# Shared by the Home Manager editor component (modules/components/editor.nix) and the standalone
+# `nix run .#nvim` package.
+#   lsp      — which LSP servers to enable (each pulls its toolchain: clangd ≈ clang-tools, gopls ≈ go).
+#   grammars — treesitter grammar names, or null for nixvim's default (every grammar).
+{
+  pkgs,
+  lsp ? [
+    "clangd"
+    "gopls"
+    "nixd"
+  ],
+  grammars ? null,
+  ...
+}:
+let
+  lib = pkgs.lib;
+in
 {
   opts = {
     number = true;
@@ -50,6 +66,9 @@
         highlight.enable = true;
         indent.enable = true;
       };
+    }
+    // lib.optionalAttrs (grammars != null) {
+      grammarPackages = map (g: pkgs.vimPlugins.nvim-treesitter.builtGrammars.${g}) grammars;
     };
     lualine.enable = true;
     gitsigns.enable = true;
@@ -71,12 +90,10 @@
       };
     };
     lsp = {
-      enable = true;
-      servers = {
-        clangd.enable = true;
-        gopls.enable = true;
-        nixd.enable = true;
-      };
+      enable = lsp != [ ];
+      servers = lib.genAttrs lsp (_: {
+        enable = true;
+      });
     };
   };
 

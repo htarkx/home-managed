@@ -17,6 +17,21 @@
 }:
 let
   cfg = config.my.vscode;
+
+  # Installed into VS Code Server (Remote SSH) on Linux; skipped until the server has been set up once.
+  serverExtensions = [
+    "eamodio.gitlens"
+    "golang.go"
+    "gruntfuggly.todo-tree"
+    "jnoortheen.nix-ide"
+    "llvm-vs-code-extensions.vscode-clangd"
+    "mkhl.direnv"
+    "ms-vscode.cmake-tools"
+    "ms-vscode.cpp-devtools"
+    "openai.chatgpt"
+    "tamasfe.even-better-toml"
+    "vadimcn.vscode-lldb"
+  ];
   jq = "${pkgs.jq}/bin/jq";
   declared = pkgs.writeText "vscode-settings.json" (builtins.toJSON cfg.settings);
   target = "${config.home.homeDirectory}/${cfg.settingsPath}";
@@ -43,6 +58,7 @@ let
 in
 {
   options.my.vscode = {
+    enable = lib.mkEnableOption "VS Code settings.json management (+ server extensions on Linux)";
     settings = lib.mkOption {
       type = with lib.types; attrsOf anything;
       default = { };
@@ -64,8 +80,36 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
+    # Shared by every machine; OS-specific keys are declared in modules/platform/*.nix.
+    my.vscode.settings = {
+      "nix.enableLanguageServer" = true;
+      "nix.serverPath" = "nixd";
+    };
+
     home.packages = [ drift ];
+
+    home.activation.installVscodeServerExtensions = lib.mkIf pkgs.stdenv.isLinux (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        code_server_bin="$(ls -1dt "$HOME"/.vscode-server/cli/servers/Stable-*/server/bin/code-server 2>/dev/null | head -n 1)"
+        if [ -z "$code_server_bin" ]; then
+          code_server_bin="$(ls -1dt "$HOME"/.vscode-server/bin/*/bin/code-server 2>/dev/null | head -n 1)"
+        fi
+
+        if [ -z "$code_server_bin" ]; then
+          # Fresh machine: no VS Code Remote session yet. Skip instead of failing the whole switch;
+          # the next switch after the first Remote SSH connection installs the extensions.
+          echo "installVscodeServerExtensions: code-server not found under ~/.vscode-server, skipping" >&2
+        else
+          installed="$("$code_server_bin" --list-extensions 2>/dev/null)"
+          while IFS= read -r ext; do
+            [ -n "$ext" ] || continue
+            echo "$installed" | grep -Fxiq "$ext" && continue
+            "$code_server_bin" --install-extension "$ext" >/dev/null 2>&1
+          done <<< "${lib.concatStringsSep "\n" serverExtensions}"
+        fi
+      ''
+    );
 
     home.activation.vscodeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       f=${lib.escapeShellArg target}
