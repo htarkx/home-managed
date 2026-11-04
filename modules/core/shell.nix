@@ -72,8 +72,12 @@
         # ~/.nix-profile/bin off PATH. Sourcing here (guarded internally by
         # $__ETC_PROFILE_NIX_SOURCED, so it is a no-op when /etc/zshrc still runs
         # it) makes interactive shells self-heal after such an update.
+        # Single-user installs (NIX_MODE=single in env.htark.dev/setup) have no daemon script;
+        # their equivalent lives in the user profile.
         if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
           . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+        elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+          . "$HOME/.nix-profile/etc/profile.d/nix.sh"
         fi
 
         # Re-assert user PATH for interactive shells. hm-session-vars.sh prepends
@@ -233,6 +237,8 @@
       # (guarded internally by $__ETC_PROFILE_NIX_SOURCED) so shells self-heal.
       if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
         . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+      elif [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
       fi
 
       export LANG=C.UTF-8
